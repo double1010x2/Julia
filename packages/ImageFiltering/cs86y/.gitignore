@@ -1,0 +1,10 @@
+*.jl.cov
+*.jl.*.cov
+*.jl.mem
+.vscode
+docs/build
+docs/site
+docs/src/democards
+Manifest.toml
+/.benchmarkci
+/benchmark/*.json

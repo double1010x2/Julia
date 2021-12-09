@@ -1,0 +1,5 @@
+status = [
+  "buildkite/zygote-dot-jl"
+]
+
+timeout-sec = 14400

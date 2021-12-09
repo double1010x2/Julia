@@ -8,7 +8,7 @@ using Flux, Metalhead
 using Flux.Data: DataLoader
 using Flux: @epochs, onecold, onehotbatch, throttle, logitcrossentropy, outdims
 using Statistics
-using CuArrays
+#using CuArrays
 push!(LOAD_PATH, pwd())
 using Revise
 using MLModel
@@ -122,7 +122,7 @@ if switch_image_extract
         
         image_mat           = np.transpose(image_mat, (2,3,1,0))
         #========== save Image ===========#
-        path_tmp = ""
+        local path_tmp = ""
         img_key = match(r"training", pi) != nothing ? "training" : "verify"
         tar_key = match(r"training", pi) != nothing ? "training_tar" : "verify_tar"
         image_dict[img_key] = image_mat

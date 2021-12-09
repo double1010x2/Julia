@@ -1,0 +1,46 @@
+++++++++++++++++++++++++++++++++++++++++++++++++++
+|In outer(a, b, c, d) at ui.jl:51
+| 51  function outer(a, b, c, d)
+|>52      inner_kw(a, b; c = c)
+| 53  end
+|
+|About to run: (var"#inner_kw##kw"())((c = 5,), inner_kw, 1, 2)
+|1|debug> 
+--------------------------------------------------
+|AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+|AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+|BBBBBAAAAAAAAAAAAAAAAAAAAAAAAA
+|AAAAAAAA
+|
+|AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+|CCCCCCCCC
+++++++++++++++++++++++++++++++++++++++++++++++++++
+|In outer(a, b, c, d) at ui.jl:51
+| 51  function outer(a, b, c, d)
+|>52      inner_kw(a, b; c = c)
+| 53  end
+|
+|About to run: (var"#inner_kw##kw"())((c = 5,), inner_kw, 1, 2)
+|1|debug> s
+|In #inner_kw#10(c, d, , a, b) at ui.jl:55
+| 55  function inner_kw(a, b; c = 3, d = 10)
+|>56      return a + b + c + d
+| 57  end
+|
+|About to run: (+)(1, 2, 5, 10)
+|1|debug> 
+--------------------------------------------------
+|AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+|AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+|BBBBBAAAAAAAAAAAAAAAAAAAAAAAAA
+|AAAAAAAA
+|
+|AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+|CCCCCCCCCA
+|AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+|AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+|BBBBBAAAAAAAAAAAAAAAAAAAAAAAA
+|AAAAAAAA
+|
+|AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+|CCCCCCCCC

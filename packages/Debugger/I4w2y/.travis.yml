@@ -1,0 +1,23 @@
+language: julia
+
+os:
+  - linux
+  - osx
+  - windows
+
+julia:
+  - 1.0
+  - 1
+  - 1.6
+  - nightly
+
+branches:
+  only:
+  - master
+
+notifications:
+  email: false
+
+after_success:
+  # push coverage results to Codecov
+- julia -e 'import Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'
