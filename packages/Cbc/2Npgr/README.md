@@ -1,0 +1,108 @@
+[![](https://www.coin-or.org/wordpress/wp-content/uploads/2014/08/COINOR.png)](https://www.coin-or.org)
+
+# Cbc.jl
+
+[![Build Status](https://github.com/jump-dev/Cbc.jl/workflows/CI/badge.svg?branch=master)](https://github.com/jump-dev/Cbc.jl/actions?query=workflow%3ACI)
+[![codecov](https://codecov.io/gh/jump-dev/Cbc.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/jump-dev/Cbc.jl)
+
+`Cbc.jl` is a Julia wrapper for the [COIN-OR Branch and Cut (Cbc)](https://projects.coin-or.org/Cbc)
+solver. 
+
+The wrapper has two components:
+ * a thin wrapper around the complete C API
+ * an interface to [MathOptInterface](https://github.com/jump-dev/MathOptInterface)
+
+*Note: This wrapper is maintained by the JuMP community and is not a COIN-OR
+project.*
+
+## Installation
+
+Install Cbc.jl using `Pkg.add`:
+```julia
+import Pkg; Pkg.add("Cbc")
+```
+
+In addition to installing the Cbc.jl package, this will also download and
+install the Cbc binaries. (You do not need to install Cbc separately.) If you
+require a custom build of Cbc, see the **Custom Installation** instructions
+below.
+
+## Use with JuMP
+
+To use Cbc with [JuMP](https://github.com/jump-dev/JuMP.jl), use `Cbc.Optimizer`:
+```julia
+using JuMP, Cbc
+model = Model(Cbc.Optimizer)
+set_optimizer_attribute(model, "logLevel", 1)
+```
+
+## Options
+
+Options are, unfortunately, not well documented.
+
+The following options are likely to be the most useful:
+
+* `seconds` -- Solution timeout limit.
+
+    For example, `set_optimizer_attribute(model, "seconds", 60.0)`.
+
+* `logLevel` -- Set to 1 to enable solution output.
+
+    For example, `set_optimizer_attribute(model, "logLevel", 1)`.
+
+* `maxSolutions` -- Terminate after this many feasible solutions have been found.
+
+    For example, `set_optimizer_attribute(model, "maxSolutions", 1)`.
+
+* `maxNodes` -- Terminate after this many branch-and-bound nodes have been evaluated.
+
+    For example, `set_optimizer_attribute(model, "maxNodes", 1)`.
+
+* `allowableGap` -- Terminate after optimality gap is less than this value (on an absolute scale).
+
+    For example, `set_optimizer_attribute(model, "allowableGap", 0.05)`.
+
+* `ratioGap` -- Terminate after optimality gap is smaller than this relative fraction.
+
+    For example, `set_optimizer_attribute(model, "ratioGap", 0.05)`.
+
+* `threads` -- Set the number of threads to use for parallel branch & bound.
+
+    For example, `set_optimizer_attribute(model, "threads", 2)`.
+
+The complete list of parameters can be found by running the `cbc` executable and
+typing `?` at the prompt.
+
+On Julia 1.3 and above, you can start the `cbc` executable from Julia as follows:
+```julia
+using Cbc_jll
+Cbc_jll.cbc() do exe
+    run(`$(exe)`)
+end
+```
+
+## Custom Installation
+
+To install custom built Cbc binaries, use the environmental variable
+`JULIA_CBC_LIBRARY_PATH` to point to the path at which you installed Cbc (the
+folder containing `libCbcSolver`). 
+
+For example, on Mac, after installing Cbc with `brew install cbc`, use:
+```julia
+ENV["JULIA_CBC_LIBRARY_PATH"] = "/usr/local/Cellar/cbc/2.10.5/lib"
+import Pkg
+Pkg.add("Cbc")
+Pkg.build("Cbc")
+```
+Replace `"/usr/local/Cellar/cbc/2.10.5/lib"` with a different path as
+appropriate.
+
+**You must have `JULIA_CBC_LIBRARY_PATH` set _every_ time you run `using Cbc`,
+not just when you install it.**
+
+Switch back to the default binaries as follows:
+```julia
+delete!(ENV, "JULIA_CBC_LIBRARY_PATH")
+import Pkg
+Pkg.build("Cbc")
+```

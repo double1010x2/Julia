@@ -1,0 +1,20 @@
+name = "Cgl_jll"
+uuid = "3830e938-1dd0-5f3e-8b8e-b3ee43226782"
+version = "0.6000.300+0"
+
+[deps]
+JLLWrappers = "692b3bcd-3c85-4b1f-b108-f13ce0eb3210"
+Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
+CoinUtils_jll = "be027038-0da8-5614-b30d-e42594cb92df"
+CompilerSupportLibraries_jll = "e66e0078-7015-5450-92f7-15fbd957f2ae"
+Clp_jll = "06985876-5285-5a41-9fcb-8948a742cc53"
+Osi_jll = "7da25872-d9ce-5375-a4d3-7a845f58efdd"
+Libdl = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
+Artifacts = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
+
+[compat]
+JLLWrappers = "1.2.0"
+julia = "1.6"
+CoinUtils_jll = "200.1100.400"
+Clp_jll = "100.1700.601"
+Osi_jll = "0.10800.600"
