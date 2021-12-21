@@ -1,8 +1,10 @@
 # **Julia ML-Clustering project by x-means**
-
+  ## **Xmeans**
+  - Currently, the best algorithm I used to cluster the data due to no need to decide the cluster count. 
+----
   ## **Data format**
-  - iris
-  - gaussian distribution by make_blobs
+  - iris by RDatasets package
+  - gaussian distribution by make_blobs from MLJ packages
 ----
   ## **Reference**
   - https://github.com/KazuhisaFujita/X-means                   
@@ -17,4 +19,3 @@
 ----
   ## **Results**
   - ![Loading results](https://github.com/double1010x2/Julia/blob/main/ML/Clustering/xmeans/data1.png) 
-  - ![Loading results](https://github.com/double1010x2/Julia/blob/main/ML/Clustering/xmeans/data2.png) 
