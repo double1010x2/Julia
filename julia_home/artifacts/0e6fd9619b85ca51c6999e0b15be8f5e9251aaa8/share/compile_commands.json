@@ -1,0 +1,32 @@
+[
+{
+  "directory": "/workspace/srcdir/cimgui/build",
+  "command": "/opt/bin/x86_64-linux-gnu-g++ --sysroot=/opt/x86_64-linux-gnu/x86_64-linux-gnu/sys-root/  -DIMGUI_DISABLE_OBSOLETE_FUNCTIONS=1 -DIMGUI_IMPL_API=\"extern \\\"C\\\" \" -Dcimgui_EXPORTS -I/workspace/srcdir/cimgui -I/workspace/srcdir/cimgui/imgui  -O3 -DNDEBUG -fPIC   -o CMakeFiles/cimgui.dir/cimgui.cpp.o -c /workspace/srcdir/cimgui/cimgui.cpp",
+  "file": "/workspace/srcdir/cimgui/cimgui.cpp"
+},
+{
+  "directory": "/workspace/srcdir/cimgui/build",
+  "command": "/opt/bin/x86_64-linux-gnu-g++ --sysroot=/opt/x86_64-linux-gnu/x86_64-linux-gnu/sys-root/  -DIMGUI_DISABLE_OBSOLETE_FUNCTIONS=1 -DIMGUI_IMPL_API=\"extern \\\"C\\\" \" -Dimgui_cpp_EXPORTS -I/workspace/srcdir/cimgui/imgui  -O3 -DNDEBUG -fPIC   -o CMakeFiles/imgui-cpp.dir/imgui/imgui.cpp.o -c /workspace/srcdir/cimgui/imgui/imgui.cpp",
+  "file": "/workspace/srcdir/cimgui/imgui/imgui.cpp"
+},
+{
+  "directory": "/workspace/srcdir/cimgui/build",
+  "command": "/opt/bin/x86_64-linux-gnu-g++ --sysroot=/opt/x86_64-linux-gnu/x86_64-linux-gnu/sys-root/  -DIMGUI_DISABLE_OBSOLETE_FUNCTIONS=1 -DIMGUI_IMPL_API=\"extern \\\"C\\\" \" -Dimgui_cpp_EXPORTS -I/workspace/srcdir/cimgui/imgui  -O3 -DNDEBUG -fPIC   -o CMakeFiles/imgui-cpp.dir/imgui/imgui_draw.cpp.o -c /workspace/srcdir/cimgui/imgui/imgui_draw.cpp",
+  "file": "/workspace/srcdir/cimgui/imgui/imgui_draw.cpp"
+},
+{
+  "directory": "/workspace/srcdir/cimgui/build",
+  "command": "/opt/bin/x86_64-linux-gnu-g++ --sysroot=/opt/x86_64-linux-gnu/x86_64-linux-gnu/sys-root/  -DIMGUI_DISABLE_OBSOLETE_FUNCTIONS=1 -DIMGUI_IMPL_API=\"extern \\\"C\\\" \" -Dimgui_cpp_EXPORTS -I/workspace/srcdir/cimgui/imgui  -O3 -DNDEBUG -fPIC   -o CMakeFiles/imgui-cpp.dir/imgui/imgui_demo.cpp.o -c /workspace/srcdir/cimgui/imgui/imgui_demo.cpp",
+  "file": "/workspace/srcdir/cimgui/imgui/imgui_demo.cpp"
+},
+{
+  "directory": "/workspace/srcdir/cimgui/build",
+  "command": "/opt/bin/x86_64-linux-gnu-g++ --sysroot=/opt/x86_64-linux-gnu/x86_64-linux-gnu/sys-root/  -DIMGUI_DISABLE_OBSOLETE_FUNCTIONS=1 -DIMGUI_IMPL_API=\"extern \\\"C\\\" \" -Dimgui_cpp_EXPORTS -I/workspace/srcdir/cimgui/imgui  -O3 -DNDEBUG -fPIC   -o CMakeFiles/imgui-cpp.dir/imgui/imgui_widgets.cpp.o -c /workspace/srcdir/cimgui/imgui/imgui_widgets.cpp",
+  "file": "/workspace/srcdir/cimgui/imgui/imgui_widgets.cpp"
+},
+{
+  "directory": "/workspace/srcdir/cimgui/build",
+  "command": "/opt/bin/x86_64-linux-gnu-gcc --sysroot=/opt/x86_64-linux-gnu/x86_64-linux-gnu/sys-root/ -DIMGUI_DISABLE_OBSOLETE_FUNCTIONS=1 -DIMGUI_IMPL_API=\"extern \\\"C\\\" \" -Dcimgui_helper_EXPORTS -I/workspace/srcdir/cimgui -I/workspace/srcdir/cimgui/imgui  -O3 -DNDEBUG -fPIC   -o CMakeFiles/cimgui_helper.dir/helper.c.o   -c /workspace/srcdir/cimgui/helper.c",
+  "file": "/workspace/srcdir/cimgui/helper.c"
+}
+]
