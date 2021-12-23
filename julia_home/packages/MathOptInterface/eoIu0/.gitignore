@@ -1,0 +1,10 @@
+*.jl.cov
+*.jl.*.cov
+*.jl.mem
+.vscode/*
+docs/build/
+docs/latex_build/
+docs/site/
+test/Benchmarks/*.json
+Manifest.toml
+*.swp

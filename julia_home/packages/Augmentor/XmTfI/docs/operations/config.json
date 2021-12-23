@@ -1,0 +1,11 @@
+{
+  "order": [
+    "affine",
+    "distortions",
+    "color",
+    "blur",
+    "size",
+    "misc"
+  ]
+}
+  

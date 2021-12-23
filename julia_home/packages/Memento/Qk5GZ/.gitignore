@@ -1,0 +1,8 @@
+.DS_Store
+Manifest.toml
+docs/build/
+docs/site/
+!docs/Manifest.toml
+*.jl.*.cov
+benchmark/.results/*.jld
+benchmark/.tune.jld
