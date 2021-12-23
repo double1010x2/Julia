@@ -1,8 +1,0 @@
-*.lp
-*.mps
-*.swp
-*.sublime*
-*.log
-*.cov
-Manifest.toml
-scripts/*.h

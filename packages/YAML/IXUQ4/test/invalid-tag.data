@@ -1,3 +1,0 @@
-process: !invalid-tag
-    arg1: "Arg 1"
-    arg2: "Arg 2"

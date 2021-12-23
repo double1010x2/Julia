@@ -1,7 +1,0 @@
-*.jl.cov
-*.jl.*.cov
-*.jl.mem
-docs/build/
-docs/src/demo/lexers/
-docs/src/demo/themes/
-Manifest.toml
