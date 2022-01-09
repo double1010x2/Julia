@@ -1,0 +1,3 @@
+┌ Info: Creating depsfile. GR provider is BinaryBuilder
+│   provider = "BinaryBuilder"
+└   depsfile = "/home/jieba/.julia/packages/GR/SOvTP/deps/deps.jl"

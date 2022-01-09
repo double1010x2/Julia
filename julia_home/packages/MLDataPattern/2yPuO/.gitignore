@@ -1,0 +1,7 @@
+*.jl.cov
+*.jl.*.cov
+*.jl.mem
+_build/
+_static/
+_templates
+Manifest.toml

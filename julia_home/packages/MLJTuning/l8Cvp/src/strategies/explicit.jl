@@ -1,0 +1,53 @@
+mutable struct Explicit <: TuningStrategy end
+
+struct ExplicitState{R, N}
+    range::R # a model-generating iterator
+    next::N # to hold output of `iterate(range)`
+end
+
+ExplictState(r::R, n::N) where {R,N} = ExplicitState{R, Union{Nothing, N}}(r, n)
+
+function MLJTuning.setup(tuning::Explicit, model, range, n, verbosity)
+    next = iterate(range)
+    return ExplicitState(range, next)
+end
+
+# models! returns as many models as possible but no more than `n_remaining`:
+function MLJTuning.models(tuning::Explicit,
+                          model,
+                          history,
+                          state,
+                          n_remaining,
+                          verbosity)
+
+    range, next  = state.range, state.next
+
+    next === nothing && return nothing, state
+
+    m, s = next
+    models = Any[m, ] # types not known until run-time
+
+    next = iterate(range, s)
+
+    i = 1 # current length of `models`
+    while i < n_remaining
+        next === nothing && break
+        m, s = next
+        push!(models, m)
+        i += 1
+        next = iterate(range, s)
+    end
+
+    new_state = ExplicitState(range, next)
+
+    return models, new_state
+
+end
+
+function default_n(tuning::Explicit, range)
+    try
+        length(range)
+    catch MethodError
+        DEFAULT_N
+    end
+end

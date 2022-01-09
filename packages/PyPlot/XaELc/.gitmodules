@@ -1,3 +1,0 @@
-[submodule "doc/JuliaDoc"]
-	path = doc/JuliaDoc
-	url = git@github.com:JuliaLang/JuliaDoc.git
