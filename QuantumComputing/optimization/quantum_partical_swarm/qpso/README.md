@@ -15,4 +15,11 @@
   - julia qpso.jl
 ----
   ## **Results**
-  - ![Loading results](https://github.com/double1010x2/Julia/tree/main/QuantumComputing/optimization/quantum_partical_swarm/qpso/eggholder_loss.png)
+  - Eggholder results 
+    - ![alt text](https://github.com/double1010x2/Julia/tree/main/QuantumComputing/optimization/quantum_partical_swarm/qpso/eggholder_loss.png)
+  - Rosenbrock results  
+    - ![alt text](https://github.com/double1010x2/Julia/tree/main/QuantumComputing/optimization/quantum_partical_swarm/qpso/rosenbrock_loss.png)
+    - ![alt text](https://github.com/double1010x2/Julia/tree/main/QuantumComputing/optimization/quantum_partical_swarm/qpso/rosenbrock_loss2.png)
+  - parameter exploration  
+    - ![Loading results](https://github.com/double1010x2/Julia/tree/main/QuantumComputing/optimization/quantum_partical_swarm/qpso/parameter1_exploration.png)
+    - ![Loading results](https://github.com/double1010x2/Julia/tree/main/QuantumComputing/optimization/quantum_partical_swarm/qpso/parameter2_exploration.png)
