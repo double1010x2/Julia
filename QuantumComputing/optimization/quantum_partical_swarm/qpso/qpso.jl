@@ -18,6 +18,8 @@ using Random
 import Base: iterate
 import Base: length
 @pyimport matplotlib.pylab as plt
+@pyimport matplotlib.cm as cm
+@pyimport numpy as np 
 
 function timeMark()
     t = Dates.now()
@@ -48,12 +50,30 @@ iterate(_p::Particle, i::Int)       = (i+=1; (i > getDim(_p)) ? (nothing) : (_p.
 #======== [utility] for particle struct ========#
 getPos(_p::Particle)        = _p.pos 
 setPos!(_p::Particle, _pos) = (_p.pos = _pos)
-setPos!(_p::Particle, _dim::Int, _val::Real)     = (_p.pos[_dim] = _val)
+setPos!(_p::Particle, _dim::Int, _val::Real)    = (_p.pos[_dim] = _val)
 setBound(_p::Particle, _b::Array{<:Real, 2})    = (_p.bound = _b)
-boundPos!(_p::Particle, dim) = (
-    (_p.pos[dim] > _p.bound[end])   && (_p.pos[dim] = _p.bound[end]);
-    (_p.pos[dim] < _p.bound[begin]) && (_p.pos[dim] = _p.bound[begin]);
-)
+function boundPos!(_p::Particle, dim)
+    # mirror method
+    delta = _p.bound[end] - _p.bound[begin]
+    if (_p.pos[dim] > _p.bound[end])
+        #println("before bound1 = $(_p.pos[dim])")
+        pos_over    = _p.pos[dim] - _p.bound[end]
+        _p.pos[dim] = (1 - (pos_over / delta - floor(pos_over / delta))) * delta + _p.bound[begin]
+        #println("after bound1 = $(_p.pos[dim])")
+    elseif (_p.pos[dim] < _p.bound[begin])
+        #println("before bound2 = $(_p.pos[dim])")
+        pos_over    = _p.bound[begin] - _p.pos[dim]
+        _p.pos[dim] = (pos_over / delta - floor(pos_over / delta)) * delta + _p.bound[begin]
+        #println("after bound2 = $(_p.pos[dim])")
+    end
+    # random method 
+#    if (_p.pos[dim] > _p.bound[end] || _p.pos[dim] < _p.bound[begin])
+#        _p.pos[dim] = (_p.bound[end]-_p.bound[begin]) * rand(1)[1] + _p.bound[begin]
+#    end
+    # clamping method 
+#    (_p.pos[dim] > _p.bound[end])   && (_p.pos[dim] = _p.bound[end]);
+#    (_p.pos[dim] < _p.bound[begin]) && (_p.pos[dim] = _p.bound[begin]);
+end
 #======== override the length of particle for loop in [] ========#
 length(_p::Particle)        = length(_p.pos)    
 
@@ -152,15 +172,15 @@ function latinHyperCubicSampling!(_swarm::Swarm, bounds::Array{<:Real, 2}; seed=
 end
 
 mutable struct pHistory
-    pos::Array{<:Real, 2}
-    val::Vector{<:Real}
-    pHistory(count::Int, dim::Int) = (
-        _pos = zeros(Real, (count, dim));
-        _val = zeros(Real, count);
+    pos::Array{<:Real, 3}
+    val::Array{<:Real, 2}
+    pHistory(iter::Int, count::Int, dim::Int) = (
+        _pos = zeros(Real, (iter, count, dim));
+        _val = zeros(Real, (iter, count));
         new(_pos, _val) 
     )
 end
-length(_ph::pHistory) = length(val)
+#length(_ph::pHistory) = length(val)
 
 ALPHA_LINEAR = "global-mean"
 ALPHA_UP    = "up-weighted"
@@ -186,6 +206,7 @@ mutable struct QPSO
     g::Float64
     alpha::Alpha
     attractor::Int
+    ph_best::pHistory
     ph::pHistory
     QPSO(_o, _c::Int, _b::AbstractArray, _miter::Int; 
             seed::Int=-1, trend::String="min", g=0.95, 
@@ -195,14 +216,21 @@ mutable struct QPSO
         _dim = size(_b)[begin];
         _s   = Swarm(_c, _dim, _b);
         latinHyperCubicSampling!(_s, _b; seed=seed);
-        _ph = pHistory(_miter, _dim);
+        _ph_best = pHistory(_miter, 1, _dim);
+        _ph = pHistory(_miter, _c, _dim);
         _alpha = Alpha(alpha0, alpha1, alpha_strategy);
-        new(_o, _dim, _c, _s, _miter, _b, g, _alpha, attractor, _ph)
+        new(_o, _dim, _c, _s, _miter, _b, g, _alpha, attractor, _ph_best, _ph)
     )
 end
 getBestPos(_q::QPSO) = (getBestPos(_q.swarm))
 getBestVal(_q::QPSO) = (getBestVal(_q.swarm))
-saveBest!(_q::QPSO, iter::Int) = (_q.ph.pos[iter,:] = getBestPos(_q.swarm); _q.ph.val[iter]=getBestVal(_q.swarm);)
+saveBest!(_q::QPSO, iter::Int) = (
+    _q.ph_best.pos[iter,1,:] = getBestPos(_q.swarm); 
+    _q.ph_best.val[iter,1]=getBestVal(_q.swarm);
+)
+savePos!(_q::QPSO, iter::Int, n_p::Int) = (
+    _q.ph.pos[iter,n_p,:] = getPos(_q.swarm.particles[n_p]); 
+)
 function getMeanWeight(_q::QPSO, iter::Int)
     alpha0  = _q.alpha.a0
     alpha1  = _q.alpha.a1
@@ -246,11 +274,20 @@ function getCost(_q::QPSO)
     end
 end
 
+function savePos(_q::QPSO, iter::Int)
+
+    n_p = length(_q.swarm)
+    for ni in range(1, n_p)
+        savePos!(_q, iter, ni)
+    end
+end
+
 function optimized(_q::QPSO)
     iter = 1
     while iter <= _q.maxiter
         updateParticles(_q, iter)
         getCost(_q)
+        savePos(_q, iter)
         updateBest!(_q.swarm)
         saveBest!(_q, iter)
         iter += 1
@@ -259,43 +296,68 @@ end
 
 rosenbrock(x) = (1.0 - x[1])^2 + 100.0 * (x[2] - x[1]^2)^2
 eggholder(x)  = -(x[2] + 47) * sin(sqrt(abs(x[2] + 0.5*x[1] + 47))) - x[1]*sin(sqrt(abs(x[1] - (x[2] + 47))))
+eggholder(x::Matrix{Float64}, y::Matrix{Float64})  = -(y .+ 47) * sin.(sqrt.(abs.(y .+ 0.5 .* x .+ 47))) .- x .* sin.(sqrt.(abs.(x .- (y .+ 47))))
 
 function main()
-#    qpso_b = QPSO(eggholder, 40, [[-512., 512.], [-512., 512.]], 50; alpha0=1.5, alpha1=0.5, seed=0, attractor=ATTRACTOR_BALANCED)
-#    qpso_g = QPSO(eggholder, 40, [[-512., 512.], [-512., 512.]], 50; alpha0=1.5, alpha1=0.5, seed=0, attractor=ATTRACTOR_GLOBAL)
-#    qpso_m = QPSO(eggholder, 40, [[-512., 512.], [-512., 512.]], 50; alpha0=1.5, alpha1=0.5, seed=0, attractor=ATTRACTOR_MEAN)
-#    qpso_b_up   = QPSO(eggholder, 40, [[-512., 512.], [-512., 512.]], 50; alpha0=1.5, alpha1=0.5, seed=0, attractor=ATTRACTOR_BALANCED, alpha_strategy=ALPHA_UP)
-#    qpso_b_down = QPSO(eggholder, 40, [[-512., 512.], [-512., 512.]], 50; alpha0=1.5, alpha1=0.5, seed=0, attractor=ATTRACTOR_BALANCED, alpha_strategy=ALPHA_DOWN)
+    n_particles = 40
+    n_iter      = 50
+    qpso_b = QPSO(eggholder, n_particles, [[-512., 512.], [-512., 512.]], n_iter; alpha0=1.5, alpha1=0.5, seed=0, attractor=ATTRACTOR_BALANCED)
+#    qpso_g = QPSO(eggholder, n_particles, [[-512., 512.], [-512., 512.]], n_iter; alpha0=1.5, alpha1=0.5, seed=0, attractor=ATTRACTOR_GLOBAL)
+    qpso_m = QPSO(eggholder, n_particles, [[-512., 512.], [-512., 512.]], n_iter; alpha0=1.5, alpha1=0.5, seed=0, attractor=ATTRACTOR_MEAN)
+    qpso_b_up   = QPSO(eggholder, n_particles, [[-512., 512.], [-512., 512.]], n_iter; alpha0=1.5, alpha1=0.5, seed=0, attractor=ATTRACTOR_BALANCED, alpha_strategy=ALPHA_UP)
+#    qpso_b_down = QPSO(eggholder, n_particles, [[-512., 512.], [-512., 512.]], n_iter; alpha0=1.5, alpha1=0.5, seed=0, attractor=ATTRACTOR_BALANCED, alpha_strategy=ALPHA_DOWN)
    
-    qpso_b = QPSO(rosenbrock, 40, [[-10., 10.], [-10., 10.]], 50; alpha0=1.5, alpha1=0.5, seed=0, attractor=ATTRACTOR_BALANCED)
-    qpso_g = QPSO(rosenbrock, 40, [[-10., 10.], [-10., 10.]], 50; alpha0=1.5, alpha1=0.5, seed=0, attractor=ATTRACTOR_GLOBAL)
-    qpso_m = QPSO(rosenbrock, 40, [[-10., 10.], [-10., 10.]], 50; alpha0=1.5, alpha1=0.5, seed=0, attractor=ATTRACTOR_MEAN)
-    qpso_b_up   = QPSO(rosenbrock, 40, [[-10., 10.], [-10., 10.]], 50; alpha0=1.5, alpha1=0.5, seed=0, attractor=ATTRACTOR_BALANCED, alpha_strategy=ALPHA_UP)
-    qpso_b_down = QPSO(rosenbrock, 40, [[-10., 10.], [-10., 10.]], 50; alpha0=1.5, alpha1=0.5, seed=0, attractor=ATTRACTOR_BALANCED, alpha_strategy=ALPHA_DOWN)
+#    qpso_b = QPSO(rosenbrock, n_particles, [[-10., 10.], [-10., 10.]], n_iter; alpha0=1.5, alpha1=0.5, seed=0, attractor=ATTRACTOR_BALANCED)
+#    qpso_g = QPSO(rosenbrock, n_particles, [[-10., 10.], [-10., 10.]], n_iter; alpha0=1.5, alpha1=0.5, seed=0, attractor=ATTRACTOR_GLOBAL)
+#    qpso_m = QPSO(rosenbrock, n_particles, [[-10., 10.], [-10., 10.]], n_iter; alpha0=1.5, alpha1=0.5, seed=0, attractor=ATTRACTOR_MEAN)
+#    qpso_b_up   = QPSO(rosenbrock, n_particles, [[-10., 10.], [-10., 10.]], n_iter; alpha0=1.5, alpha1=0.5, seed=0, attractor=ATTRACTOR_BALANCED, alpha_strategy=ALPHA_UP)
+#    qpso_b_down = QPSO(rosenbrock, n_particles, [[-10., 10.], [-10., 10.]], n_iter; alpha0=1.5, alpha1=0.5, seed=0, attractor=ATTRACTOR_BALANCED, alpha_strategy=ALPHA_DOWN)
     optimized(qpso_b)
-    optimized(qpso_g)
+#    optimized(qpso_g)
     optimized(qpso_m)
     optimized(qpso_b_up)
-    optimized(qpso_b_down)
+#    optimized(qpso_b_down)
 
-    plt.plot(qpso_b.ph.pos[:,2], "-r.")
-    plt.plot(qpso_g.ph.pos[:,2], "-go")
-    plt.plot(qpso_m.ph.pos[:,2], "-bv")
-    plt.plot(qpso_b_up.ph.pos[:,2], "-s")
-    plt.plot(qpso_b_down.ph.pos[:,2], "-P")
-    plt.ylabel("Parameter2 value")
-    plt.xlabel("iter")
+    step = 5::Int
+    for i in range(1, Int(floor(n_iter / step)))
+        xg = np.linspace(-520, 520, 1001)
+        yg = np.linspace(-520, 520, 1001)
+#        xg = np.linspace(-10, 10, 1001)
+#        yg = np.linspace(-10, 10, 1001)
+        X, Y = np.meshgrid(xg, yg)
+        Z  = eggholder(X, Y)
 
-#    plt.plot(qpso_b.ph.val, "-r.")
-#    plt.plot(qpso_g.ph.val, "-go")
-#    plt.plot(qpso_m.ph.val, "-bv")
-#    plt.plot(qpso_b_up.ph.val, "-s")
-#    plt.plot(qpso_b_down.ph.val, "-P")
-    plt.legend(["balanced", "gBest", "Pbest_mean", "balanced with up side", "balanced with down side"])
-#    plt.ylabel("loss of rosenbrock")
+#        plt.contourf(X, Y, Z, cmap=cm.rainbow, level=np.linspace(-0.5,0,5,11))
+        plt.pcolormesh(X, Y, Z, cmap=cm.jet, shading="gouraud")
+#        plt.scatter(1, 1, s=500, c="r", marker="x")
+        plt.scatter(512, 404.2319, s=500, c="r", marker="x")
+        plt.scatter(qpso_b_up.ph.pos[i*step,:,1], qpso_b_up.ph.pos[i*step,:,2], s=50, c="g", marker="o")
+#        plt.scatter(qpso_b.ph.pos[i*5,1], qpso_b.ph.pos[i*5,2], s=100, c="r", marker=".")
+#        plt.scatter(qpso_g.ph.pos[i*5,1], qpso_g.ph.pos[i*5,2], s=100, c="g", marker="o")
+#        plt.scatter(qpso_m.ph.pos[i*5,1], qpso_m.ph.pos[i*5,2], s=100, c="b", marker="v")
+#        plt.scatter(qpso_b_up.ph.pos[i*5,1],     qpso_b_up.ph.pos[i*5,2], s=100, marker="s")
+#        plt.scatter(qpso_b_down.ph.pos[i*5,1],   qpso_b_down.ph.pos[i*5,2], s=100, marker="P")
+        plt.ylabel("Parameter1")
+        plt.xlabel("Parameter2")
+        plt.title("Eggholder funcgion iter=$(i*step)")
+        plt.show()
+    end
+    
+    #plt.scatter(qpso_b.ph_best.pos[:,1,1], qpso_b.ph_best.pos[:,1,2], s=50, c="r", marker=".")
+    #plt.scatter(qpso_g.ph_best.pos[:,1,1], qpso_g.ph_best.pos[:,1,2], s=50, c="g", marker="o")
+    #plt.scatter(qpso_m.ph_best.pos[:,1,1], qpso_m.ph_best.pos[:,1,2], s=50, c="b", marker="v")
+    #plt.scatter(qpso_b_up.ph_best.pos[:,1,1],  qpso_b_up.ph_best.pos[:,1,2], s=50, marker="s")
+    #plt.scatter(qpso_b_down.ph_best.pos[:,1,1],qpso_b_down.ph_best.pos[:,1,2], s=50, marker="P")
+#    plt.plot(qpso_b.ph_best.val, "-r.")
+#    plt.plot(qpso_g.ph_best.val, "-go")
+#    plt.plot(qpso_m.ph_best.val, "-bv")
+#    plt.plot(qpso_b_up.ph_best.val, "-s")
+#    plt.plot(qpso_b_down.ph_best.val, "-P")
+#    plt.legend(["balanced", "gBest", "Pbest_mean", "balanced with up side", "balanced with down side"])
+#    plt.ylabel("loss of eggholder")
 #    plt.xlabel("iter")
 #    plt.title("Attractor compared")
-    plt.show()
+#    plt.show()
 end
 
 # same as python __name__ == __main__
