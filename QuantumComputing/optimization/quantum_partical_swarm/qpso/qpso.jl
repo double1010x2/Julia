@@ -15,12 +15,14 @@ using ArgParse
 using Dates
 using PyCall
 using Random
+using Statistics
 import Base: iterate
 import Base: length
 @pyimport matplotlib.pylab as plt
 @pyimport matplotlib.cm as cm
 @pyimport numpy as np 
 
+include("swarm.jl")
 function timeMark()
     t = Dates.now()
     Y = Dates.year(t)
@@ -32,123 +34,20 @@ function timeMark()
     println("[$Y-$M-$D $h:$m:$s] - ")
 end
 
-mutable struct Particle
-    pos::Vector{<:Real}
-    best_pos::Vector{<:Real}
-    best_val::Real
-    bound::Array{<:Real, 2}
-    function Particle(_bound; _trend::String="min") 
-        ndims(_bound) <= 1 && (_bound = reshape(_bound, 1, 2))
-        dim = size(_bound)[begin]
-        _particle = new(fill(0., dim), fill(0., dim), (_trend=="min") ? Inf : -Inf, _bound)
-        return _particle 
-    end
-end
-#======== [iterator] for position element in particle ========#
-iterate(_p::Particle)               = _p.pos[1], 1
-iterate(_p::Particle, i::Int)       = (i+=1; (i > getDim(_p)) ? (nothing) : (_p.pos[i], i)) # This method caused bypass some
-#======== [utility] for particle struct ========#
-getPos(_p::Particle)        = _p.pos 
-setPos!(_p::Particle, _pos) = (_p.pos = _pos)
-setPos!(_p::Particle, _dim::Int, _val::Real)    = (_p.pos[_dim] = _val)
-setBound(_p::Particle, _b::Array{<:Real, 2})    = (_p.bound = _b)
-function boundPos!(_p::Particle, dim)
-    # mirror method
-    delta = _p.bound[end] - _p.bound[begin]
-    if (_p.pos[dim] > _p.bound[end])
-        #println("before bound1 = $(_p.pos[dim])")
-        pos_over    = _p.pos[dim] - _p.bound[end]
-        _p.pos[dim] = (1 - (pos_over / delta - floor(pos_over / delta))) * delta + _p.bound[begin]
-        #println("after bound1 = $(_p.pos[dim])")
-    elseif (_p.pos[dim] < _p.bound[begin])
-        #println("before bound2 = $(_p.pos[dim])")
-        pos_over    = _p.bound[begin] - _p.pos[dim]
-        _p.pos[dim] = (pos_over / delta - floor(pos_over / delta)) * delta + _p.bound[begin]
-        #println("after bound2 = $(_p.pos[dim])")
-    end
-    # random method 
-#    if (_p.pos[dim] > _p.bound[end] || _p.pos[dim] < _p.bound[begin])
-#        _p.pos[dim] = (_p.bound[end]-_p.bound[begin]) * rand(1)[1] + _p.bound[begin]
-#    end
-    # clamping method 
-#    (_p.pos[dim] > _p.bound[end])   && (_p.pos[dim] = _p.bound[end]);
-#    (_p.pos[dim] < _p.bound[begin]) && (_p.pos[dim] = _p.bound[begin]);
-end
-#======== override the length of particle for loop in [] ========#
-length(_p::Particle)        = length(_p.pos)    
-
-getDim(_p::Particle)        = length(_p.pos)
-getBestPos(_p::Particle)    = _p.best_pos
-getBestVal(_p::Particle)    = _p.best_val
-initialBound(dim::Int)      = (_b = ones(Float64, (dim, 2)); _b[:,begin] .= -1; _b) 
-ParticleN(dim::Int)         = (Particle(initialBound(dim)))
-
-function setBestPos!(_p::Particle, _pos::Vector{<:Real}, _val::Real; trend="min") 
-    op = (trend == "min") ? (<=) : (>=)
-    if op(_val, _p.best_val)
-        _p.best_pos = _pos
-        _p.best_val = _val
-    end
-end
-
-mutable struct Swarm 
-    particles::Vector{Particle}
-    gbest::Vector{<:Real}
-    gbest_val::Real
-    bound::Array{<:Real, 2}
-end
-iterate(_s::Swarm)          = _s.particles[1], 1 
-iterate(_s::Swarm, i::Int)  = (i+=1; (i > length(_s)) ? (nothing) : (_s.particles[i], i))
-Swarm(_n::Int, _dim::Int; trend="min") = (
-    _b = initialBound(_dim);
-    Swarm(_n, _dim, _b; trend=trend)
-)
-Swarm(_num_of_particle::Int, _dim::Int, _b::Array{<:Real, 2}; trend="min") = (
-    _particles  = [Particle(_b) for _ in range(1, _num_of_particle)];
-    _gbest      = zeros(_dim);
-    Swarm(_particles, _gbest, (trend=="min") ? (Inf) : (-Inf), _b)
-)
-length(_swarm::Swarm)    = (length(_swarm.particles))
-getDim(_swarm::Swarm)    = (size(_swarm.bound)[begin])
-getBestPos(_s::Swarm)    = _s.gbest 
-getBestVal(_s::Swarm)    = _s.gbest_val 
-function getMeanPos(_s::Swarm)    
-    mpos = zeros(Float64, size(_s.gbest));
-    for pi in _s
-        mpos = mpos .+ getBestPos(pi)
-    end
-    return mpos ./ length(_s)
-end
-
-function updateBest!(_s::Swarm; trend="min")
-    row         = length(_s)
-    gbest       = getBestPos(_s)
-    gbest_val   = getBestVal(_s)
-    op          = (trend=="min") ? (<=) : (>=) 
-    for ri in range(1, row)
-        if op(getBestVal(_s.particles[ri]) ,gbest_val)  
-            gbest       = getBestPos(_s.particles[ri])
-            gbest_val   = getBestVal(_s.particles[ri])
-        end
-    end
-    _s.gbest     = gbest
-    _s.gbest_val = gbest_val
-end
-
 function linearMap(x::AbstractArray{<:Real}, bound_in::Vector{<:Real}, bound_out::Vector{<:Real})
     a = (bound_out[end]-bound_out[begin]) / (bound_in[end]-bound_in[begin])
     b = bound_out[begin] - a * bound_in[begin]
     return a .* x .+ b
 end
 
-function newBound(_b::Vector{Vector{Float64}}) 
+function vector2DtoMatrix(_b::Vector{Vector{Float64}}) 
     _nb = Array{eltype(_b[1][1]), 2}(undef, length(_b), 2)
     for i in range(1, length(_b))
         _nb[i,:] = _b[i]
     end
     return _nb
 end 
-newBound(_b::Array{Float64, 2}) = _b 
+vector2DtoMatrix(_b::Array{Float64, 2}) = _b 
 
 function latinHyperCubicSampling!(_swarm::Swarm, bounds::Array{<:Real, 2}; seed=-1)
     row = length(_swarm)
@@ -171,16 +70,6 @@ function latinHyperCubicSampling!(_swarm::Swarm, bounds::Array{<:Real, 2}; seed=
     end
 end
 
-mutable struct pHistory
-    pos::Array{<:Real, 3}
-    val::Array{<:Real, 2}
-    pHistory(iter::Int, count::Int, dim::Int) = (
-        _pos = zeros(Real, (iter, count, dim));
-        _val = zeros(Real, (iter, count));
-        new(_pos, _val) 
-    )
-end
-#length(_ph::pHistory) = length(val)
 
 ALPHA_LINEAR = "global-mean"
 ALPHA_UP    = "up-weighted"
@@ -200,164 +89,285 @@ mutable struct QPSO
     oracle
     dim::Int
     count::Int
-    swarm::Swarm
+    swarms::Vector{Swarm}
     maxiter::Int
+    qbest::Vector{<:Real}
+    qbest_val::Real
     bounds::Array{<:Real, 2}
     g::Float64
     alpha::Alpha
     attractor::Int
-    ph_best::pHistory
-    ph::pHistory
-    QPSO(_o, _c::Int, _b::AbstractArray, _miter::Int; 
-            seed::Int=-1, trend::String="min", g=0.95, 
+    i_swarm::Int
+    dbg::String
+    function QPSO(_o, _c::Int, _b::AbstractArray, _miter::Int; 
+            seed::Int=-1, trend::String="min", g=0.95, minibatch=1, 
             alpha0=0.9, alpha1=0.1, alpha_strategy=ALPHA_LINEAR,
-            attractor=ATTRACTOR_BALANCED) = (
-        _b   = newBound(_b);
-        _dim = size(_b)[begin];
-        _s   = Swarm(_c, _dim, _b);
-        latinHyperCubicSampling!(_s, _b; seed=seed);
-        _ph_best = pHistory(_miter, 1, _dim);
-        _ph = pHistory(_miter, _c, _dim);
-        _alpha = Alpha(alpha0, alpha1, alpha_strategy);
-        new(_o, _dim, _c, _s, _miter, _b, g, _alpha, attractor, _ph_best, _ph)
-    )
+            attractor=ATTRACTOR_BALANCED, dbg="")
+        _b   = vector2DtoMatrix(_b)
+        _dim = size(_b)[begin]
+        _s   = [Swarm(_c, _dim, _b) for _ in range(1, minibatch)]
+        for i in range(1, minibatch)
+            latinHyperCubicSampling!(_s[i], _b; seed=seed)
+        end
+        _alpha = Alpha(alpha0, alpha1, alpha_strategy)
+        _qbest = zeros(Float64, _dim)
+        _qbest_val = (trend=="min") ? Inf : -Inf 
+        return new(_o, _dim, _c, _s, _miter, _qbest, _qbest_val, _b, g, _alpha, attractor, 1, dbg)
+    end
 end
-getBestPos(_q::QPSO) = (getBestPos(_q.swarm))
-getBestVal(_q::QPSO) = (getBestVal(_q.swarm))
-saveBest!(_q::QPSO, iter::Int) = (
-    _q.ph_best.pos[iter,1,:] = getBestPos(_q.swarm); 
-    _q.ph_best.val[iter,1]=getBestVal(_q.swarm);
-)
-savePos!(_q::QPSO, iter::Int, n_p::Int) = (
-    _q.ph.pos[iter,n_p,:] = getPos(_q.swarm.particles[n_p]); 
-)
-function getMeanWeight(_q::QPSO, iter::Int)
+iterate(_q::QPSO)    = _q.swarms[1], 1 
+iterate(_q::QPSO, i::Int)  = (i+=1; (i > length(_q)) ? (nothing) : (_q.swarms[i], i))
+length(_q::QPSO)     = (length(_q.swarms))
+getDim(_q::QPSO)     = (getDim(_q.swarms[end]))
+getBestPos(_q::QPSO) = (_q.qbest)
+getBestVal(_q::QPSO) = (_q.qbest_val)
+getBatchBestVal(_q::QPSO)  = ([getBestVal(si) for si in _q])
+#updateBest!(_q::QPSO) = (updateBest!(_q.swarms[_q.i_swarm]))
+getSwarm(_q::QPSO)   = (_q.swarms[_q.i_swarm])
+function updateBest!(_q::QPSO)    
+    updateBest!(_q.swarms[_q.i_swarm]);
+    if _q.qbest_val > getBestVal(getSwarm(_q))
+        _q.qbest_val = getBestVal(getSwarm(_q))
+        _q.qbest     = getBestPos(getSwarm(_q))
+    end
+end  
+
+function getPrevSwarm(_q::QPSO, i::Int) 
+    (i <= 0 || length(_q) == 1) && (return getSwarm(_q));
+    i_prev = _q.i_swarm - i;
+    i_prev = (i_prev < 1) ? (i_prev+length(_q)) : i_prev;
+    _q.swarms[i_prev]
+end
+
+function getBestIter(_q::QPSO)  
+    _minibatch = length(_q)
+    _best      = Float64[getBestVal(getPrevSwarm(_q, _minibatch-1))]
+    for mi in collect(_minibatch-1:-1:1)
+        push!(_best, minimum((_best[end], getBestVal(getPrevSwarm(_q,mi-1)))))
+    end
+    return _best
+end 
+
+function getWeight(_q::QPSO, iter::Int)
     alpha0  = _q.alpha.a0
     alpha1  = _q.alpha.a1
     dalpha  = alpha0 - alpha1
     iter_wt = float(iter)/float(_q.maxiter)
+    wt      = 1. 
     if _q.alpha.strategy == ALPHA_DOWN 
-        return (alpha1 + dalpha * iter_wt^2)
+        wt = (alpha1 + dalpha * iter_wt^2)
     elseif _q.alpha.strategy == ALPHA_UP
-        return (dalpha * iter_wt^2 - alpha1 * dalpha * 2 * iter_wt + alpha1) 
-    else 
-        return 1. 
+        wt = (dalpha * iter_wt^2 - alpha1 * dalpha * 2 * iter_wt + alpha1) 
     end
+    return wt
 end
+function getMeanWeight(_q::QPSO, iter::Int)
+    _minibatch  = (iter >= length(_q)) ? length(_q) : iter
+    mean_sum    = zeros(Float64, (1, getDim(_q)))
+    
+    for i in range(0, _minibatch-1)
+        wt      = getWeight(_q, iter - i)
+        _mean2D = vector2DtoMatrix([getBestPos(pi) for pi in getPrevSwarm(_q, i)]) .* wt
+#        _mean2D = vector2DtoMatrix([getBestPos(pi) for pi in _q.swarm.getParticlesHistory(_q.swarm, i)]) .* wt_sum
+        mean_sum += mean(_mean2D, dims=1)
+    end
+    mean_sum = mean_sum ./ float(_minibatch) 
+    return mean_sum
+end
+
+assignSwarmIndex(_q::QPSO, iter::Int) = (_q.i_swarm = mod(iter, length(_q)) + 1)
 
 function updateParticles(_q::QPSO, iter::Int)
     (iter == 1) && (return)
-    mpos = getMeanPos(_q.swarm) .* getMeanWeight(_q, iter)
-    for _p in _q.swarm
+    _s   = getSwarm(_q)         # current swarm
+    _sp  = getPrevSwarm(_q, 1)  # previous swarm
+    mpos = getMeanPos(_sp)
+    mpos = (_q.alpha.strategy == ALPHA_DOWN || _q.alpha.strategy == ALPHA_UP) ? getMeanWeight(_q, iter) : mpos
+#    for _p in _sp
+    for pi in range(1, length(_s))
+        _p  = getParticle(_s, pi) 
+        _pp = getParticle(_sp, pi) 
         for dim in range(1, getDim(_p)) 
             u1, u2, u3 = rand(3)
             _sign = (rand() > 0.5) ? 1 : -1
-            c = (u1 * getBestPos(_p)[dim] + u2 * getBestPos(_q.swarm)[dim]) / (u1 + u2)
+            c = (u1 * getBestPos(_pp)[dim] + u2 * getBestPos(_q)[dim]) / (u1 + u2)
             L = if _q.attractor == ATTRACTOR_GLOBAL
-                (1. / _q.g) * abs(getBestPos(_q.swarm)[dim]-c)
+                (1. / _q.g) * abs(getBestPos(_q)[dim]-c)
             elseif _q.attractor == ATTRACTOR_BALANCED
-                (1. / _q.g) * (abs(getBestPos(_q.swarm)[dim]-c) + abs(mpos[dim]-c))
+                (1. / _q.g) * (abs(getBestPos(_q)[dim]-c) + abs(mpos[dim]-c))
             else
                 (1. / _q.g) * abs(mpos[dim]-c)
             end
-            #    (1. / _q.g) * abs(getPos(_p)[dim]-c)
             setPos!(_p, dim, c + _sign * L * log(1. / u3))
             boundPos!(_p, dim)
         end
     end
-
 end
 
 function getCost(_q::QPSO)
-    for pi in _q.swarm
-        setBestPos!(pi, getPos(pi), _q.oracle(getPos(pi)))
+    for pi in getSwarm(_q)
+        setVal!(pi, _q.oracle(getPos(pi)))
+        setBestPos!(pi, getPos(pi), getVal(pi))
     end
 end
 
-function savePos(_q::QPSO, iter::Int)
+function checkDBGFile(dbg_file::String)
+    (length(dbg_file) <= 0) && return nothing
+    (isfile(dbg_file)) && (rm(dbg_file))
+    return open(dbg_file, "a")
+end
 
-    n_p = length(_q.swarm)
-    for ni in range(1, n_p)
-        savePos!(_q, iter, ni)
+function genDBGHeader!(_q::QPSO, iter::Int, io)
+    write(io, "#iter,particle_i")
+    for di in range(1, getDim(_q))
+        write(io, ",parameter$di")
+    end
+    write(io, ",value\n")
+end
+
+function saveDBGFile(_q::QPSO, iter::Int, io)
+    (io == nothing) && return 
+    
+    (iter == 1) && (genDBGHeader!(_q, iter, io))
+
+    _s = getSwarm(_q)
+    for i in range(1, length(_s))
+        pi = getParticle(_s, i)
+        write(io, "$(iter), $(i)")
+        for di in pi
+            write(io, ", $(di)")
+        end
+        val = getVal(pi)
+        write(io, ", $(val)\n") 
     end
 end
 
 function optimized(_q::QPSO)
     iter = 1
+    dbg_io = checkDBGFile(_q.dbg)
     while iter <= _q.maxiter
+#        _q.i_swarm = mod(iter, length(_q))+1
+        assignSwarmIndex(_q, iter)
         updateParticles(_q, iter)
         getCost(_q)
-        savePos(_q, iter)
-        updateBest!(_q.swarm)
-        saveBest!(_q, iter)
+        saveDBGFile(_q, iter, dbg_io)
+        updateBest!(_q)
         iter += 1
     end
+    (dbg_io != nothing) && close(dbg_io)
 end
 
+rana(x) = (x[1]*sin(sqrt(abs(x[2]+1-x[1])))*cos(sqrt(abs(x[1]+x[2]+1))) 
+        + (x[2]+1)*cos(sqrt(abs(x[2]+1-x[1])))*sin(sqrt(abs(x[1]+x[2]+1))))
 rosenbrock(x) = (1.0 - x[1])^2 + 100.0 * (x[2] - x[1]^2)^2
 eggholder(x)  = -(x[2] + 47) * sin(sqrt(abs(x[2] + 0.5*x[1] + 47))) - x[1]*sin(sqrt(abs(x[1] - (x[2] + 47))))
 eggholder(x::Matrix{Float64}, y::Matrix{Float64})  = -(y .+ 47) * sin.(sqrt.(abs.(y .+ 0.5 .* x .+ 47))) .- x .* sin.(sqrt.(abs.(x .- (y .+ 47))))
 
+function plotBestIter(qq::QPSO, marker::String, color::String)
+    loss_arr = getBestIter(qq)
+    plt.plot(loss_arr, "-$(color)$(marker)")
+    println("Loss = $(loss_arr[end])")
+end
+
+function plotLossContour2D(limit::Vector{Float64})
+    xg = np.linspace(limit[1], limit[2], 1001)
+    yg = np.linspace(limit[1], limit[2], 1001)
+    X, Y = np.meshgrid(xg, yg)
+    Z  = eggholder(X, Y)
+    plt.pcolormesh(X, Y, Z, cmap=cm.jet, shading="gouraud")
+##        plt.contourf(X, Y, Z, cmap=cm.rainbow, level=np.linspace(-0.5,0,5,11))
+end
+
 function main()
-    n_particles = 40
+    n_particles = 10
     n_iter      = 50
-    qpso_b = QPSO(eggholder, n_particles, [[-512., 512.], [-512., 512.]], n_iter; alpha0=1.5, alpha1=0.5, seed=0, attractor=ATTRACTOR_BALANCED)
-#    qpso_g = QPSO(eggholder, n_particles, [[-512., 512.], [-512., 512.]], n_iter; alpha0=1.5, alpha1=0.5, seed=0, attractor=ATTRACTOR_GLOBAL)
-    qpso_m = QPSO(eggholder, n_particles, [[-512., 512.], [-512., 512.]], n_iter; alpha0=1.5, alpha1=0.5, seed=0, attractor=ATTRACTOR_MEAN)
-    qpso_b_up   = QPSO(eggholder, n_particles, [[-512., 512.], [-512., 512.]], n_iter; alpha0=1.5, alpha1=0.5, seed=0, attractor=ATTRACTOR_BALANCED, alpha_strategy=ALPHA_UP)
-#    qpso_b_down = QPSO(eggholder, n_particles, [[-512., 512.], [-512., 512.]], n_iter; alpha0=1.5, alpha1=0.5, seed=0, attractor=ATTRACTOR_BALANCED, alpha_strategy=ALPHA_DOWN)
+    seed        = 1
+    func        = eggholder
+    limit       = [[-512., 512.], [-512., 512.]]
+#    func        = rosenbrock 
+#    limit       = [[-10., 10.], [-10., 10.]]
+#    func = rana
+#    limit       = [[-512., 512.], [-512., 512.]]
+    qpso_b = QPSO(func, n_particles, limit, n_iter; 
+        alpha0=1.5, alpha1=0.5, seed=seed, attractor=ATTRACTOR_BALANCED, minibatch=n_iter)
+    qpso_g = QPSO(func, n_particles, limit, n_iter; 
+        alpha0=1.5, alpha1=0.5, seed=seed, attractor=ATTRACTOR_GLOBAL, minibatch=n_iter)
+    qpso_m = QPSO(func, n_particles, limit, n_iter; 
+        alpha0=1.5, alpha1=0.5, seed=seed, attractor=ATTRACTOR_MEAN, minibatch=n_iter)
+    qpso_b_up   = QPSO(func, n_particles, limit, n_iter; 
+        alpha0=1.5, alpha1=0.5, seed=seed, attractor=ATTRACTOR_BALANCED, alpha_strategy=ALPHA_UP, minibatch=n_iter)
+    qpso_b_down = QPSO(func, n_particles, limit, n_iter; 
+        alpha0=1.5, alpha1=0.5, seed=seed, attractor=ATTRACTOR_BALANCED, alpha_strategy=ALPHA_DOWN, minibatch=n_iter)
    
-#    qpso_b = QPSO(rosenbrock, n_particles, [[-10., 10.], [-10., 10.]], n_iter; alpha0=1.5, alpha1=0.5, seed=0, attractor=ATTRACTOR_BALANCED)
-#    qpso_g = QPSO(rosenbrock, n_particles, [[-10., 10.], [-10., 10.]], n_iter; alpha0=1.5, alpha1=0.5, seed=0, attractor=ATTRACTOR_GLOBAL)
-#    qpso_m = QPSO(rosenbrock, n_particles, [[-10., 10.], [-10., 10.]], n_iter; alpha0=1.5, alpha1=0.5, seed=0, attractor=ATTRACTOR_MEAN)
-#    qpso_b_up   = QPSO(rosenbrock, n_particles, [[-10., 10.], [-10., 10.]], n_iter; alpha0=1.5, alpha1=0.5, seed=0, attractor=ATTRACTOR_BALANCED, alpha_strategy=ALPHA_UP)
-#    qpso_b_down = QPSO(rosenbrock, n_particles, [[-10., 10.], [-10., 10.]], n_iter; alpha0=1.5, alpha1=0.5, seed=0, attractor=ATTRACTOR_BALANCED, alpha_strategy=ALPHA_DOWN)
     optimized(qpso_b)
-#    optimized(qpso_g)
+    optimized(qpso_g)
     optimized(qpso_m)
     optimized(qpso_b_up)
-#    optimized(qpso_b_down)
+    optimized(qpso_b_down)
 
-    step = 5::Int
-    for i in range(1, Int(floor(n_iter / step)))
-        xg = np.linspace(-520, 520, 1001)
-        yg = np.linspace(-520, 520, 1001)
-#        xg = np.linspace(-10, 10, 1001)
-#        yg = np.linspace(-10, 10, 1001)
-        X, Y = np.meshgrid(xg, yg)
-        Z  = eggholder(X, Y)
-
-#        plt.contourf(X, Y, Z, cmap=cm.rainbow, level=np.linspace(-0.5,0,5,11))
-        plt.pcolormesh(X, Y, Z, cmap=cm.jet, shading="gouraud")
-#        plt.scatter(1, 1, s=500, c="r", marker="x")
-        plt.scatter(512, 404.2319, s=500, c="r", marker="x")
-        plt.scatter(qpso_b_up.ph.pos[i*step,:,1], qpso_b_up.ph.pos[i*step,:,2], s=50, c="g", marker="o")
-#        plt.scatter(qpso_b.ph.pos[i*5,1], qpso_b.ph.pos[i*5,2], s=100, c="r", marker=".")
-#        plt.scatter(qpso_g.ph.pos[i*5,1], qpso_g.ph.pos[i*5,2], s=100, c="g", marker="o")
-#        plt.scatter(qpso_m.ph.pos[i*5,1], qpso_m.ph.pos[i*5,2], s=100, c="b", marker="v")
-#        plt.scatter(qpso_b_up.ph.pos[i*5,1],     qpso_b_up.ph.pos[i*5,2], s=100, marker="s")
-#        plt.scatter(qpso_b_down.ph.pos[i*5,1],   qpso_b_down.ph.pos[i*5,2], s=100, marker="P")
-        plt.ylabel("Parameter1")
-        plt.xlabel("Parameter2")
-        plt.title("Eggholder funcgion iter=$(i*step)")
-        plt.show()
-    end
-    
-    #plt.scatter(qpso_b.ph_best.pos[:,1,1], qpso_b.ph_best.pos[:,1,2], s=50, c="r", marker=".")
-    #plt.scatter(qpso_g.ph_best.pos[:,1,1], qpso_g.ph_best.pos[:,1,2], s=50, c="g", marker="o")
-    #plt.scatter(qpso_m.ph_best.pos[:,1,1], qpso_m.ph_best.pos[:,1,2], s=50, c="b", marker="v")
-    #plt.scatter(qpso_b_up.ph_best.pos[:,1,1],  qpso_b_up.ph_best.pos[:,1,2], s=50, marker="s")
-    #plt.scatter(qpso_b_down.ph_best.pos[:,1,1],qpso_b_down.ph_best.pos[:,1,2], s=50, marker="P")
-#    plt.plot(qpso_b.ph_best.val, "-r.")
-#    plt.plot(qpso_g.ph_best.val, "-go")
-#    plt.plot(qpso_m.ph_best.val, "-bv")
-#    plt.plot(qpso_b_up.ph_best.val, "-s")
-#    plt.plot(qpso_b_down.ph_best.val, "-P")
+    #===== For plot loss dependent on iter ====#
+#    plotBestIter(qpso_b, ".", "r")
+#    plotBestIter(qpso_g, "o", "g")
+#    plotBestIter(qpso_m, "v", "b")
+#    plotBestIter(qpso_b_up, "s", "c")
+#    plotBestIter(qpso_b_down, "P", "m")
 #    plt.legend(["balanced", "gBest", "Pbest_mean", "balanced with up side", "balanced with down side"])
-#    plt.ylabel("loss of eggholder")
+#    plt.ylabel("loss")
 #    plt.xlabel("iter")
-#    plt.title("Attractor compared")
+##    plt.title("Eggholder function by QPSO")
+# #   plt.title("Rosenbrock function by QPSO")
+#    plt.title("rana function by QPSO")
 #    plt.show()
+    #===== End =====#
+
+    #===== plot all best parameter space =====#
+    _step = 1::Int
+    plotLossContour2D([-520., 520.])
+    plt.scatter(512, 404.2319, s=500, c="k", marker="x")    # solution
+#    plotLossContour2D([-11., 11.])
+#    plt.scatter(0., 0., s=500, c="k", marker="x")    # solution
+#    plotLossContour2D([-520., 520.])
+#    plt.scatter(-488.6326, 512, s=500, c="k", marker="x")    # solution
+    plt.colorbar()
+    plt.scatter([getBestPos(getPrevSwarm(qpso_b, n_iter - i))[1] for i in collect(1:_step:n_iter)], 
+                [getBestPos(getPrevSwarm(qpso_b, n_iter - i))[2] for i in collect(1:_step:n_iter)], s=50, c="r", marker=".") 
+    plt.scatter([getBestPos(getPrevSwarm(qpso_g, n_iter - i))[1] for i in collect(1:_step:n_iter)], 
+                [getBestPos(getPrevSwarm(qpso_g, n_iter - i))[2] for i in collect(1:_step:n_iter)], s=50, c="g", marker="o") 
+    plt.scatter([getBestPos(getPrevSwarm(qpso_m, n_iter - i))[1] for i in collect(1:_step:n_iter)], 
+                [getBestPos(getPrevSwarm(qpso_m, n_iter - i))[2] for i in collect(1:_step:n_iter)], s=50, c="b", marker="v") 
+    plt.scatter([getBestPos(getPrevSwarm(qpso_b_up, n_iter - i))[1] for i in collect(1:_step:n_iter)], 
+                [getBestPos(getPrevSwarm(qpso_b_up, n_iter - i))[2] for i in collect(1:_step:n_iter)], s=50, c="c", marker="s") 
+    plt.scatter([getBestPos(getPrevSwarm(qpso_b_down, n_iter - i))[1] for i in collect(1:_step:n_iter)], 
+                [getBestPos(getPrevSwarm(qpso_b_down, n_iter - i))[2] for i in collect(1:_step:n_iter)], s=50, c="m", marker="P") 
+    plt.legend(["solution", "balanced", "gBest", "Pbest_mean", "balanced with up side", "balanced with down side"])
+    plt.xlabel("parameter1")
+    plt.ylabel("parameter2")
+#    plt.legend(["solution", "gBest"])
+#    plt.title("rana function by QPSO(n_particle=10, n_iter=50)")
+#    plt.title("rosenbrock function by QPSO(n_particle=10, n_iter=20)")
+    plt.title("eggholder function by QPSO(n_particle=10, n_iter=50)")
+    plt.show()
+    #===== End =====#
+    
+    #===== plot dynamic parameter space =====#
+#    _step = 10::Int
+#    for i in collect(0:_step:n_iter)
+#        (i < 1) && continue
+#        println("plot $i")
+#        plotLossContour2D([-520., 520.])
+#        plt.scatter(512, 404.2319, s=500, c="k", marker="x")    # solution
+#        ss = getPrevSwarm(qpso_b_down, n_iter-i)
+#        xy = [getPos(pi) for pi in ss]
+#        xy = vector2DtoMatrix(xy)
+#        plt.scatter(xy[:,1], xy[:,2], s=50, c="g", marker=".")
+#        plt.scatter(getBestPos(ss)[1], getBestPos(ss)[2], s=50, c="r", marker="o")
+#        plt.legend(["solution", "particles", "best particle"])
+#        plt.xlabel("parameter1")
+#        plt.ylabel("parameter2")
+#        plt.title("Eggholder contour at iter($i)")
+#        plt.savefig("./eggholder_iter_png/eggholder_iter$(i).png")
+#    end
+    #===== End =====#
 end
 
 # same as python __name__ == __main__
