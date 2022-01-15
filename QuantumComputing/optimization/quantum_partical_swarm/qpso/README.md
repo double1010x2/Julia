@@ -16,14 +16,14 @@
 ----
   ## **Results**
   - Eggholder results 
-    - ![Eggholder results](https://github.com/double1010x2/Julia/tree/main/QuantumComputing/optimization/quantum_partical_swarm/qpso/eggholder_loss_compared.png)
-    - ![Parameter space](https://github.com/double1010x2/Julia/tree/main/QuantumComputing/optimization/quantum_partical_swarm/qpso/eggholder_parameter_space_compared.png)
+    ![Eggholder results](https://github.com/double1010x2/Julia/tree/main/QuantumComputing/optimization/quantum_partical_swarm/qpso/eggholder_loss_compared.png)
+    ![Parameter space](https://github.com/double1010x2/Julia/tree/main/QuantumComputing/optimization/quantum_partical_swarm/qpso/eggholder_parameter_space_compared.png)
   - Rana results  
-    - ![Eggholder results](https://github.com/double1010x2/Julia/tree/main/QuantumComputing/optimization/quantum_partical_swarm/qpso/rana_loss_compared.png)
-    - ![Parameter space](https://github.com/double1010x2/Julia/tree/main/QuantumComputing/optimization/quantum_partical_swarm/qpso/rana_parameter_space_compared.png)
+    ![Eggholder results](https://github.com/double1010x2/Julia/tree/main/QuantumComputing/optimization/quantum_partical_swarm/qpso/rana_loss_compared.png)
+    ![Parameter space](https://github.com/double1010x2/Julia/tree/main/QuantumComputing/optimization/quantum_partical_swarm/qpso/rana_parameter_space_compared.png)
   - Rosenbrock results  
-    - ![Eggholder results](https://github.com/double1010x2/Julia/tree/main/QuantumComputing/optimization/quantum_partical_swarm/qpso/rana_loss_compared.png)
+    ![Eggholder results](https://github.com/double1010x2/Julia/tree/main/QuantumComputing/optimization/quantum_partical_swarm/qpso/rana_loss_compared.png)
   - Rosenbrock results  
-    - ![Rosenbrock results](https://github.com/double1010x2/Julia/tree/main/QuantumComputing/optimization/quantum_partical_swarm/qpso/rosenbrock_loss_compared.png)
-    - ![Parameter space](https://github.com/double1010x2/Julia/tree/main/QuantumComputing/optimization/quantum_partical_swarm/qpso/rosenbrock_parameter_space_compared.png)
+    ![Rosenbrock results](https://github.com/double1010x2/Julia/tree/main/QuantumComputing/optimization/quantum_partical_swarm/qpso/rosenbrock_loss_compared.png)
+    ![Parameter space](https://github.com/double1010x2/Julia/tree/main/QuantumComputing/optimization/quantum_partical_swarm/qpso/rosenbrock_parameter_space_compared.png)
 
