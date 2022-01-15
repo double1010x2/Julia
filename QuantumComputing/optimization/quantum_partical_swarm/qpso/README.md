@@ -15,7 +15,7 @@
   - julia qpso.jl
 ----
   ## **Results**
-  ![Eggholder results](https://github.com/double1010x2/Julia/tree/main/QuantumComputing/optimization/quantum_partical_swarm/qpso/eggholder_loss_compared.png)
+  ![Eggholder results](eggholder_loss_compared.png)
 
   ![Parameter space](https://github.com/double1010x2/Julia/tree/main/QuantumComputing/optimization/quantum_partical_swarm/qpso/eggholder_parameter_space_compared.png)
 
