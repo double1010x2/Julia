@@ -18,4 +18,5 @@
       - -D / --data_type -> data type for xmeans
 ----
   ## **Results**
-  - ![Loading results](https://github.com/double1010x2/Julia/blob/main/ML/Clustering/xmeans/data1.png) 
+  - ![Loading results](data1.png) 
+  - ![Loading results](data2.png) 
