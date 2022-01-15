@@ -15,17 +15,13 @@
   - julia qpso.jl
 ----
   ## **Results**
-  ![Eggholder results](eggholder_loss_compared.png)
-
-  ![Parameter space](https://github.com/double1010x2/Julia/tree/main/QuantumComputing/optimization/quantum_partical_swarm/qpso/eggholder_parameter_space_compared.png)
-
-  ![Eggholder results](https://github.com/double1010x2/Julia/tree/main/QuantumComputing/optimization/quantum_partical_swarm/qpso/rana_loss_compared.png)
-  
-  ![Parameter space](https://github.com/double1010x2/Julia/tree/main/QuantumComputing/optimization/quantum_partical_swarm/qpso/rana_parameter_space_compared.png)
-  
-  ![Eggholder results](https://github.com/double1010x2/Julia/tree/main/QuantumComputing/optimization/quantum_partical_swarm/qpso/rana_loss_compared.png)
-    
-  ![Rosenbrock results](https://github.com/double1010x2/Julia/tree/main/QuantumComputing/optimization/quantum_partical_swarm/qpso/rosenbrock_loss_compared.png)
-  
-  ![Parameter space](https://github.com/double1010x2/Julia/tree/main/QuantumComputing/optimization/quantum_partical_swarm/qpso/rosenbrock_parameter_space_compared.png)
+  - eggholder function after optimized results
+    - ![Eggholder results](eggholder_loss_compared.png)
+    - ![Parameter space](eggholder_parameter_space_compared.png)
+  - rana function after optimized results
+    - ![Eggholder results](rana_loss_compared.png)
+    - ![Parameter space](rana_parameter_space_compared.png)
+  - rosenbrock function after optimized results 
+    - ![Rosenbrock results](rosenbrock_loss_compared.png)
+    - ![Parameter space](rosenbrock_parameter_space_compared.png)
 
