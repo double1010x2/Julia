@@ -1,4 +1,4 @@
-# **Julia QPSO Optimization by Quamtum-inspired Computing **
+# **Julia QPSO Optimization by Quamtum-inspired Computing**
   ## **QPSO(Quantum Particle Swarm Optimization)**
   - Tried to implement this algorithm by Julia. Currently, the QPSO with balanced-global-attractor and down-side nonlinear weight strategy got the better results. Otherwise, the exploration of optimized parameter by balanced-global-attractor method is better than the attractor by group-best and particle-best method. 
 ----
