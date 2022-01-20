@@ -242,7 +242,7 @@ function saveDBGFile(_q::QPSO, iter::Int, io)
     end
 end
 
-function optimized(_q::QPSO)
+function optimized(_q::QPSO; verbose=false)
     iter = 1
     dbg_io = checkDBGFile(_q.dbg)
     while iter <= _q.maxiter
@@ -253,6 +253,9 @@ function optimized(_q::QPSO)
         saveDBGFile(_q, iter, dbg_io)
         updateBest!(_q)
         iter += 1
+        if verbose
+            println("iter($iter), best = $(_q.qbest_val)")        
+        end
     end
     (dbg_io != nothing) && close(dbg_io)
 end
@@ -278,16 +281,7 @@ function plotLossContour2D(limit::Vector{Float64})
 ##        plt.contourf(X, Y, Z, cmap=cm.rainbow, level=np.linspace(-0.5,0,5,11))
 end
 
-function main()
-    n_particles = 10
-    n_iter      = 50
-    seed        = 1
-    func        = eggholder
-    limit       = [[-512., 512.], [-512., 512.]]
-#    func        = rosenbrock 
-#    limit       = [[-10., 10.], [-10., 10.]]
-#    func = rana
-#    limit       = [[-512., 512.], [-512., 512.]]
+function plotLossCompared(func, limit, n_particles, n_iter; seed=1)
     qpso_b = QPSO(func, n_particles, limit, n_iter; 
         alpha0=1.5, alpha1=0.5, seed=seed, attractor=ATTRACTOR_BALANCED, minibatch=n_iter)
     qpso_g = QPSO(func, n_particles, limit, n_iter; 
@@ -298,32 +292,48 @@ function main()
         alpha0=1.5, alpha1=0.5, seed=seed, attractor=ATTRACTOR_BALANCED, alpha_strategy=ALPHA_UP, minibatch=n_iter)
     qpso_b_down = QPSO(func, n_particles, limit, n_iter; 
         alpha0=1.5, alpha1=0.5, seed=seed, attractor=ATTRACTOR_BALANCED, alpha_strategy=ALPHA_DOWN, minibatch=n_iter)
-   
     optimized(qpso_b)
     optimized(qpso_g)
     optimized(qpso_m)
     optimized(qpso_b_up)
-    optimized(qpso_b_down)
-
+    optimized(qpso_b_down)    
     #===== For plot loss dependent on iter ====#
-#    plotBestIter(qpso_b, ".", "r")
-#    plotBestIter(qpso_g, "o", "g")
-#    plotBestIter(qpso_m, "v", "b")
-#    plotBestIter(qpso_b_up, "s", "c")
-#    plotBestIter(qpso_b_down, "P", "m")
-#    plt.legend(["balanced", "gBest", "Pbest_mean", "balanced with up side", "balanced with down side"])
-#    plt.ylabel("loss")
-#    plt.xlabel("iter")
+    plotBestIter(qpso_b, ".", "r")
+    plotBestIter(qpso_g, "o", "g")
+    plotBestIter(qpso_m, "v", "b")
+    plotBestIter(qpso_b_up, "s", "c")
+    plotBestIter(qpso_b_down, "P", "m")
+    plt.legend(["balanced", "gBest", "Pbest_mean", "balanced with up side", "balanced with down side"])
+    plt.ylabel("loss")
+    plt.xlabel("iter")
 ##    plt.title("Eggholder function by QPSO")
 # #   plt.title("Rosenbrock function by QPSO")
 #    plt.title("rana function by QPSO")
-#    plt.show()
+    plt.show()
     #===== End =====#
+end
 
-    #===== plot all best parameter space =====#
+function comparedBestPositionSpace(func, limit, n_particles, n_iter, map_limit, x0; seed=1)
+    qpso_b = QPSO(func, n_particles, limit, n_iter; 
+        alpha0=1.5, alpha1=0.5, seed=seed, attractor=ATTRACTOR_BALANCED, minibatch=n_iter)
+    qpso_g = QPSO(func, n_particles, limit, n_iter; 
+        alpha0=1.5, alpha1=0.5, seed=seed, attractor=ATTRACTOR_GLOBAL, minibatch=n_iter)
+    qpso_m = QPSO(func, n_particles, limit, n_iter; 
+        alpha0=1.5, alpha1=0.5, seed=seed, attractor=ATTRACTOR_MEAN, minibatch=n_iter)
+    qpso_b_up   = QPSO(func, n_particles, limit, n_iter; 
+        alpha0=1.5, alpha1=0.5, seed=seed, attractor=ATTRACTOR_BALANCED, alpha_strategy=ALPHA_UP, minibatch=n_iter)
+    qpso_b_down = QPSO(func, n_particles, limit, n_iter; 
+        alpha0=1.5, alpha1=0.5, seed=seed, attractor=ATTRACTOR_BALANCED, alpha_strategy=ALPHA_DOWN, minibatch=n_iter)
+    optimized(qpso_b)
+    optimized(qpso_g)
+    optimized(qpso_m)
+    optimized(qpso_b_up)
+    optimized(qpso_b_down)    
+
+        #===== plot all best parameter space =====#
     _step = 1::Int
-    plotLossContour2D([-520., 520.])
-    plt.scatter(512, 404.2319, s=500, c="k", marker="x")    # solution
+    plotLossContour2D(map_limit)
+    plt.scatter(x0[1], x0[2], s=500, c="k", marker="x")    # solution
 #    plotLossContour2D([-11., 11.])
 #    plt.scatter(0., 0., s=500, c="k", marker="x")    # solution
 #    plotLossContour2D([-520., 520.])
@@ -348,25 +358,48 @@ function main()
     plt.title("eggholder function by QPSO(n_particle=10, n_iter=50)")
     plt.show()
     #===== End =====#
-    
-    #===== plot dynamic parameter space =====#
-#    _step = 10::Int
-#    for i in collect(0:_step:n_iter)
-#        (i < 1) && continue
-#        println("plot $i")
-#        plotLossContour2D([-520., 520.])
-#        plt.scatter(512, 404.2319, s=500, c="k", marker="x")    # solution
-#        ss = getPrevSwarm(qpso_b_down, n_iter-i)
-#        xy = [getPos(pi) for pi in ss]
-#        xy = vector2DtoMatrix(xy)
-#        plt.scatter(xy[:,1], xy[:,2], s=50, c="g", marker=".")
-#        plt.scatter(getBestPos(ss)[1], getBestPos(ss)[2], s=50, c="r", marker="o")
-#        plt.legend(["solution", "particles", "best particle"])
-#        plt.xlabel("parameter1")
-#        plt.ylabel("parameter2")
+end
+
+function plotDynamicPositionSpace(_q::QPSO, map_limit, x0, _step, n_iter, save_key)
+     _step = 10::Int
+    for i in collect(0:_step:n_iter)
+        (i < 1) && continue
+        println("plot $i")
+        plotLossContour2D(map_limit)
+        plt.scatter(x0[1], x0[2], s=500, c="k", marker="x")    # solution
+        ss = getPrevSwarm(_q, n_iter-i)
+        xy = [getPos(pi) for pi in ss]
+        xy = vector2DtoMatrix(xy)
+        plt.scatter(xy[:,1], xy[:,2], s=50, c="g", marker=".")
+        plt.scatter(getBestPos(ss)[1], getBestPos(ss)[2], s=50, c="r", marker="o")
+        plt.legend(["solution", "particles", "best particle"])
+        plt.xlabel("parameter1")
+        plt.ylabel("parameter2")
 #        plt.title("Eggholder contour at iter($i)")
 #        plt.savefig("./eggholder_iter_png/eggholder_iter$(i).png")
-#    end
+        _path = "./$(save_key)"
+        (!isdir(_path)) && (mkdir(_path))
+        plt.savefig("$(_path)/$(save_key)_iter$(i).png")
+    end
+end
+function main()
+    func        = eggholder
+    limit       = [[-512., 512.], [-512., 512.]]
+    #func        = rosenbrock 
+    #limit       = [[-10., 10.], [-10., 10.]]
+#    func = rana
+#    limit       = [[-512., 512.], [-512., 512.]]
+
+#    plotLossCompared(func, limit, 10, 50; seed=1)
+#    comparedBestPositionSpace(func, limit, 10, 50, [-520., 520.], [-488.6326, 512]; seed=1)
+
+    #===== plot dynamic parameter space =====#
+    n_pop = 10
+    n_iter = 50
+    _qpso = QPSO(func, n_pop, limit, n_iter; 
+        alpha0=1.5, alpha1=0.5, seed=1, attractor=ATTRACTOR_BALANCED, alpha_strategy=ALPHA_DOWN, minibatch=n_iter)
+    optimized(_qpso; verbose=true)
+    plotDynamicPositionSpace(_qpso, [-520., 520.], [-488.6326, 512], 10, n_iter, "eggholder")
     #===== End =====#
 end
 
