@@ -383,22 +383,22 @@ function plotDynamicPositionSpace(_q::QPSO, map_limit, x0, _step, n_iter, save_k
     end
 end
 function main()
-    func        = eggholder
-    limit       = [[-512., 512.], [-512., 512.]]
-    #func        = rosenbrock 
-    #limit       = [[-10., 10.], [-10., 10.]]
+    #func        = eggholder
+    #limit       = [[-512., 512.], [-512., 512.]]
+    func        = rosenbrock 
+    limit       = [[-10., 10.], [-10., 10.]]
 #    func = rana
 #    limit       = [[-512., 512.], [-512., 512.]]
 
-#    plotLossCompared(func, limit, 10, 50; seed=1)
+    plotLossCompared(func, limit, 10, 50; seed=1)
 #    comparedBestPositionSpace(func, limit, 10, 50, [-520., 520.], [-488.6326, 512]; seed=1)
 
     #===== plot dynamic parameter space =====#
-    n_pop = 10
+    n_pop = 30
     n_iter = 50
     _qpso = QPSO(func, n_pop, limit, n_iter; 
         alpha0=1.5, alpha1=0.5, seed=1, attractor=ATTRACTOR_BALANCED, alpha_strategy=ALPHA_DOWN, minibatch=n_iter)
-    optimized(_qpso; verbose=true)
+    #optimized(_qpso; verbose=true)
     plotDynamicPositionSpace(_qpso, [-520., 520.], [-488.6326, 512], 10, n_iter, "eggholder")
     #===== End =====#
 end
