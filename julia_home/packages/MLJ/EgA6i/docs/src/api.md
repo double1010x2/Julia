@@ -1,5 +1,0 @@
-# Index of Methods
-
-```@index
-```
-

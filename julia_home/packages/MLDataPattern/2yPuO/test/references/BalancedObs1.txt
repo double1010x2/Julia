@@ -1,2 +1,0 @@
-BalancedObs(::Array{Float64,2}, ObsDim.Last())
- Iterator providing Inf observations

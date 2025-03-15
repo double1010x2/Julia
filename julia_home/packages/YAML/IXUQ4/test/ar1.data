@@ -1,3 +1,0 @@
-process: !AR1
-    rho: 0.95
-    sigma: 0.1

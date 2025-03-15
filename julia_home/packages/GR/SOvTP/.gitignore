@@ -1,5 +1,0 @@
-*.jl.cov
-*.jl.mem
-deps/*
-!deps/build.jl
-demos/*

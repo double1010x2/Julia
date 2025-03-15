@@ -1,1 +1,0 @@
-`/usr/bin/patchelf --set-rpath '$ORIGIN' lib/libarpack.so.2.0.0`
